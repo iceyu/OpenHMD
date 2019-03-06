@@ -25,14 +25,14 @@ set(openhmd_source_files
 	${CMAKE_CURRENT_LIST_DIR}/src/shaders.c
 )
 
-option(OPENHMD_DRIVER_OCULUS_RIFT "Oculus Rift DK1 and DK2" ON)
-option(OPENHMD_DRIVER_DEEPOON "Deepoon E2" ON)
-option(OPENHMD_DRIVER_WMR "Windows Mixed Reality" ON)
+option(OPENHMD_DRIVER_OCULUS_RIFT "Oculus Rift DK1 and DK2" OFF)
+option(OPENHMD_DRIVER_DEEPOON "Deepoon E2" OFF)
+option(OPENHMD_DRIVER_WMR "Windows Mixed Reality" OFF)
 option(OPENHMD_DRIVER_OTUS "Otus" ON)
-option(OPENHMD_DRIVER_PSVR "Sony PSVR" ON)
-option(OPENHMD_DRIVER_HTC_VIVE "HTC Vive" ON)
-option(OPENHMD_DRIVER_NOLO "NOLO VR CV1" ON)
-option(OPENHMD_DRIVER_XGVR "3Glasses HMD" ON)
+option(OPENHMD_DRIVER_PSVR "Sony PSVR" OFF)
+option(OPENHMD_DRIVER_HTC_VIVE "HTC Vive" OFF)
+option(OPENHMD_DRIVER_NOLO "NOLO VR CV1" OFF)
+option(OPENHMD_DRIVER_XGVR "3Glasses HMD" OFF)
 option(OPENHMD_DRIVER_EXTERNAL "External sensor driver" ON)
 option(OPENHMD_DRIVER_ANDROID "General Android driver" OFF)
 

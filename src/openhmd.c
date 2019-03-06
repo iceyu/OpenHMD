@@ -42,7 +42,9 @@ ohmd_context* OHMD_APIENTRY ohmd_ctx_create(void)
 #if DRIVER_WMR
 	ctx->drivers[ctx->num_drivers++] = ohmd_create_wmr_drv(ctx);
 #endif
-
+#if DRIVER_OTUS
+    ctx->drivers[ctx->num_drivers++] = ohmd_create_otus_drv(ctx);
+#endif
 #if DRIVER_PSVR
 	ctx->drivers[ctx->num_drivers++] = ohmd_create_psvr_drv(ctx);
 #endif
