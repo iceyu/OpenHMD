@@ -28,6 +28,7 @@ set(openhmd_source_files
 option(OPENHMD_DRIVER_OCULUS_RIFT "Oculus Rift DK1 and DK2" ON)
 option(OPENHMD_DRIVER_DEEPOON "Deepoon E2" ON)
 option(OPENHMD_DRIVER_WMR "Windows Mixed Reality" ON)
+option(OPENHMD_DRIVER_OTUS "Otus" ON)
 option(OPENHMD_DRIVER_PSVR "Sony PSVR" ON)
 option(OPENHMD_DRIVER_HTC_VIVE "HTC Vive" ON)
 option(OPENHMD_DRIVER_NOLO "NOLO VR CV1" ON)
@@ -73,6 +74,22 @@ if(OPENHMD_DRIVER_WMR)
 	include_directories(${HIDAPI_INCLUDE_DIRS})
 	set(LIBS ${LIBS} ${HIDAPI_LIBRARIES})
 endif(OPENHMD_DRIVER_WMR)
+
+if(OPENHMD_DRIVER_OTUS)
+	set(openhmd_source_files ${openhmd_source_files}
+	${CMAKE_CURRENT_LIST_DIR}/src/drv_otus/otus.c
+	${CMAKE_CURRENT_LIST_DIR}/src/drv_otus/otus.h
+	${CMAKE_CURRENT_LIST_DIR}/src/drv_otus/otus_cmd.c
+	${CMAKE_CURRENT_LIST_DIR}/src/drv_otus/otus_cmd.h
+	${CMAKE_CURRENT_LIST_DIR}/src/drv_otus/otus_packet.c
+	)
+	add_definitions(-DDRIVER_OTUS)
+
+	find_package(HIDAPI REQUIRED)
+	include_directories(${HIDAPI_INCLUDE_DIRS})
+	set(LIBS ${LIBS} ${HIDAPI_LIBRARIES})
+endif(OPENHMD_DRIVER_OTUS)
+
 
 if(OPENHMD_DRIVER_PSVR)
 	set(openhmd_source_files ${openhmd_source_files}
