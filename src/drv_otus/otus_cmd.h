@@ -38,14 +38,12 @@ typedef enum _otus_cmd_id {
     //- fucntion cmd 0x50 - 0x9F
     //- camera part 0x50 - 0x7F
     OTUS_SET_EXPOSURE_GAIN_CMD = 0x50,
+
     //- imu part 0x80 - 0x9F
     OTUS_ENABLE_IMU_STREAMING = 0x80,
-    OUTS_IMU_GET_SENSITIVITY = 0x81,
-    OUTS_IMU_SET_SENSITIVITY = 0x82,
-    OUTS_IMU_GET_FULLSCALE = 0x83,
-    OUTS_IMU_SET_FULLSCALE = 0x84,
-    OUTS_IMU_GET_ODR = 0x85,
-    OUTS_IMU_SET_ODR = 0x86,
+    OTUS_IS_IMU_STREAMING = 0x81,
+    OUTS_IMU_GET_VAL = 0x82,
+    OUTS_IMU_SET_VAL = 0x83,
 
     //- eeprom part 0xA0 - 0xAF
     OTUS_EEPROM_ERASE = 0xA0,

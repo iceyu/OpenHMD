@@ -34,7 +34,7 @@ void print_infoi(ohmd_device* hmd, const char* name, int len, ohmd_int_value val
 		printf("%d ", iv[i]);
 	printf("\n");
 }
-
+static int count = 0;
 int main(int argc, char** argv)
 {
 	int device_idx = 0;
@@ -97,12 +97,26 @@ int main(int argc, char** argv)
 	int device_class = 0;
 	ohmd_list_geti(ctx, device_idx, OHMD_DEVICE_CLASS, &device_class);
 	// Ask for n rotation quaternions and position vectors
-	while(1)
+    int limit = 0;
+    while(1)
     {
 		ohmd_ctx_update(ctx);
         //print_infof(hmd, "rotation quat:", 4, OHMD_ROTATION_QUAT);
         //print_infof(hmd, "position vec: ", 3, OHMD_POSITION_VECTOR);
-
+#if 1
+        if (count > 1000)
+        {
+ 
+            //print_infof(hmd, "Quat:", 4, OHMD_ROTATION_QUAT);
+            //print_infof(hmd, "position vec : ", 3, OHMD_POSITION_VECTOR);
+            count = 0;
+        }
+        else
+        {
+            count++;
+        }
+#endif
+        limit++;
 	}
 
 	ohmd_ctx_destroy(ctx);

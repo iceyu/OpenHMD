@@ -33,12 +33,12 @@ typedef struct {
 
 } otus_priv;
 
-void vec3f_from_OTUS_gyro(int16_t smp[3][8], int i, vec3f* out_vec)
+void vec3f_from_OTUS_gyro(int16_t smp[8][3], int i, vec3f* out_vec)
 {
 
         for (int j = 0; j < 3; j++)
         {
-            float sample = (float)smp[j][i];
+            float sample = (float)smp[i][j];
             out_vec->arr[j] = sample * 35.0f ;
         }
   
@@ -46,17 +46,19 @@ void vec3f_from_OTUS_gyro(int16_t smp[3][8], int i, vec3f* out_vec)
 
 }
 
-void vec3f_from_OTUS_accel(int16_t smp[3][8], int i, vec3f* out_vec)
+void vec3f_from_OTUS_accel(int16_t smp[8][3], int i, vec3f* out_vec)
 {
    
         for (int j = 0; j < 3; j++)
         {
-            float sample = (float)smp[j][i];
+            float sample = (float)smp[i][j];
             out_vec->arr[j] = sample * 0.488/1000*9.8 ;
         }
    
 }
-static count = 0;
+static int  count = 0;
+static uint64_t last_ts = 0;
+static uint64_t new_ts = 0;
 static void handle_tracker_sensor_msg(otus_priv* priv, unsigned char* buffer, int size)
 {
 	uint64_t last_sample_tick = priv->sensor.gyro_timestamp[3];
@@ -68,6 +70,8 @@ static void handle_tracker_sensor_msg(otus_priv* priv, unsigned char* buffer, in
     vec3f mag = { {0.0f, 0.0f, 0.0f} };
     IMUReport* imu_report = &priv->sensor;
     count++;
+
+
 	for(int i = 0; i < 8; i++){
 		uint64_t tick_delta = 1000;
 		if(last_sample_tick > 0) //startup correction
@@ -75,24 +79,34 @@ static void handle_tracker_sensor_msg(otus_priv* priv, unsigned char* buffer, in
 
 		float dt = tick_delta * TICK_LEN;
 
+
+      
 		vec3f_from_OTUS_gyro(imu_report->gyro, i, &priv->raw_gyro);
 		vec3f_from_OTUS_accel(imu_report->accel, i, &priv->raw_accel);
-#if 0
+        last_ts = new_ts;
+        new_ts = imu_report->gyro_timestamp[i];
         if(count>500)
         {
-            count > 500;
+            float fps = 1 / ((float)(new_ts - last_ts) / 10000000.f);
+            
+            printf("%.4f,%u,%ul,%ul,%ul\n", fps, imu_report->frame_id+i,imu_report->gyro_timestamp[i]);
             printf("%.4f,%.4f,%.4f\n", priv->raw_accel.x, priv->raw_accel.y, priv->raw_accel.z);
             count = 0;
         }
-        else
+        //else
         {
             count++;
         }
-#endif
+
+    
+        
+
 		ofusion_update(&priv->sensor_fusion, dt, &priv->raw_gyro, &priv->raw_accel, &mag);
 
 		last_sample_tick = imu_report->gyro_timestamp[i];
 	}
+
+
   
 }
 
@@ -109,15 +123,19 @@ static void update_device(ohmd_device* device)
 			LOGE("error reading from device");
 			return;
 		} else if(size == 0) {
+            //LOGE("error reading from device");
 			return; // No more messages, return.
 		}
-        handle_tracker_sensor_msg(priv, buffer, size);
-		//// currently the only message type the hardware supports (I think)
-		//if(buffer[0] == OTUS_IRQ_SENSORS){
-		//	
-		//}else if(buffer[0] != OTUS_IRQ_DEBUG){
-		//	LOGE("unknown message type: %u", buffer[0]);
-		//}
+        if (buffer[1] == HID_REPORT_TYPE_IMU)
+        {
+            handle_tracker_sensor_msg(priv, buffer, size);
+        }
+        else
+        {
+            LOGE("unknown message type: %u", buffer[0]);
+        }
+
+	
 	}
 
 	if(size < 0){
@@ -157,7 +175,7 @@ static void close_device(ohmd_device* device)
     otus_priv* priv = (otus_priv*)device;
 
 	LOGD("closing Otus Sensors device");
-
+    cmd_imu_enable_streaming(priv->hmd_ctrl, 0);
     if (priv->hmd_imu != NULL)
     {
         hid_close(priv->hmd_imu);
@@ -250,6 +268,8 @@ static ohmd_device* open_device(ohmd_driver* driver, ohmd_device_desc* desc)
 
     // set IMU configuration
     // turn the IMU on
+    cmd_imu_enable_streaming(priv->hmd_ctrl, 0);
+    ohmd_sleep(2);
     cmd_imu_enable_streaming(priv->hmd_ctrl, 1);
     
 	// set up device callbacks

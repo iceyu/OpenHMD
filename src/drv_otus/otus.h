@@ -13,15 +13,21 @@
 #define HID_OTUS_USAGE    0x06
 #define HID_OTUS_IMU_DATA_USAGE    0x76
 
+#define HID_REPORT_TYPE_IMU (0)
+#define HID_REPORT_TYPE_DEBUG (1)  //TODO:
+
+
 #pragma pack(push, 1)
 typedef struct  {
     uint8_t report_id;
+    uint8_t type;
+    uint32_t frame_id;
     int16_t temperature[4];
     uint64_t gyro_timestamp[8];
-    int16_t gyro[3][8];
+    int16_t gyro[8][3];
 
     uint64_t accel_timestamp[8];
-    int16_t accel[3][8];
+    int16_t accel[8][3];
 }IMUReport;
 
 #pragma pack(pop)

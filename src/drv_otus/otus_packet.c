@@ -50,9 +50,12 @@ bool otus_sensors_decode_packet(IMUReport* pkt, const unsigned char* buffer, int
     }
     uint32_t offset = 0;
     uint8_t l_buf[IMU_REPORT_SIZE];
-    memcpy(l_buf, buffer, IMU_REPORT_SIZE);
-
+    memcpy(pkt, buffer, IMU_REPORT_SIZE);  //little endian
+    return true;
+#if 0
     pkt->report_id = read8(buffer + offset, &offset);
+    pkt->type = read8(buffer + offset, &offset);
+    pkt->frame_id = read32(buffer + offset, &offset);
     for (int i = 0; i < 4; i++)
     {
         pkt->temperature[i] = read16(buffer + offset, &offset);
@@ -82,7 +85,7 @@ bool otus_sensors_decode_packet(IMUReport* pkt, const unsigned char* buffer, int
 
         }
     }
-
+#endif
 
 
     return true;
