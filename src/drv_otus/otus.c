@@ -31,28 +31,40 @@ typedef struct {
 	uint8_t last_seq;
     IMUReport sensor;
 
+
+    float accel_sensitivity;
+    float gyro_sensitivity;
+    float temp_sensitivity;
+
+    float accel_fullscale;
+    float gyro_fullscale;
+
+    float accel_odr;
+    float gyro_odr;
+
+
 } otus_priv;
 
-void vec3f_from_OTUS_gyro(int16_t smp[8][3], int i, vec3f* out_vec)
+void vec3f_from_OTUS_gyro(otus_priv *priv,int16_t smp[8][3], int i, vec3f* out_vec)
 {
 
         for (int j = 0; j < 3; j++)
         {
             float sample = (float)smp[i][j];
-            out_vec->arr[j] = sample * 35.0f ;
+            out_vec->arr[j] = sample * priv->gyro_sensitivity;
         }
   
     return;
 
 }
 
-void vec3f_from_OTUS_accel(int16_t smp[8][3], int i, vec3f* out_vec)
+void vec3f_from_OTUS_accel(otus_priv *priv, int16_t smp[8][3], int i, vec3f* out_vec)
 {
    
         for (int j = 0; j < 3; j++)
         {
             float sample = (float)smp[i][j];
-            out_vec->arr[j] = sample * 0.488/1000*9.8 ;
+            out_vec->arr[j] = sample * priv->accel_sensitivity /1000*9.8 ;
         }
    
 }
@@ -81,15 +93,16 @@ static void handle_tracker_sensor_msg(otus_priv* priv, unsigned char* buffer, in
 
 
       
-		vec3f_from_OTUS_gyro(imu_report->gyro, i, &priv->raw_gyro);
-		vec3f_from_OTUS_accel(imu_report->accel, i, &priv->raw_accel);
+		vec3f_from_OTUS_gyro(priv,imu_report->gyro, i, &priv->raw_gyro);
+		vec3f_from_OTUS_accel(priv,imu_report->accel, i, &priv->raw_accel);
         last_ts = new_ts;
-        new_ts = imu_report->gyro_timestamp[i];
+        new_ts = imu_report->gyro_timestamp[i];            
+        //printf("%.4f,%u,%ul\n", 0, imu_report->frame_id+i,imu_report->gyro_timestamp[i]);
+
         if(count>500)
         {
             float fps = 1 / ((float)(new_ts - last_ts) / 10000000.f);
             
-            printf("%.4f,%u,%ul,%ul,%ul\n", fps, imu_report->frame_id+i,imu_report->gyro_timestamp[i]);
             printf("%.4f,%.4f,%.4f\n", priv->raw_accel.x, priv->raw_accel.y, priv->raw_accel.z);
             count = 0;
         }
@@ -253,8 +266,7 @@ static ohmd_device* open_device(ohmd_driver* driver, ohmd_device_desc* desc)
 	if(ret!=0)
 		goto cleanup;
 
-    // TODO read config information from device
-	//config = read_config(priv);
+ 
 
 
 	if(hid_set_nonblocking(priv->hmd_imu, 1) == -1){
@@ -267,6 +279,25 @@ static ohmd_device* open_device(ohmd_driver* driver, ohmd_device_desc* desc)
     }
 
     // set IMU configuration
+    cmd_get_val(priv->hmd_ctrl, IMU_ACEEL_SENSITIVITY, &priv->accel_sensitivity);
+    cmd_get_val(priv->hmd_ctrl, IMU_GYRO_SENSITIVITY, &priv->gyro_sensitivity);
+    cmd_get_val(priv->hmd_ctrl, IMU_TEMP_SENSITIVITY, &priv->temp_sensitivity);
+
+
+    cmd_get_val(priv->hmd_ctrl, IMU_ACEEL_FULLSCALE, &priv->accel_fullscale);
+    cmd_get_val(priv->hmd_ctrl, IMU_GYRO_FULLSCALE, &priv->gyro_fullscale);
+
+    cmd_get_val(priv->hmd_ctrl, IMU_ACEEL_ODR, &priv->accel_odr);
+    cmd_get_val(priv->hmd_ctrl, IMU_GYRO_ODR, &priv->gyro_odr);
+
+    printf("accel_sensitivity:%f\n", priv->accel_sensitivity);
+    printf("gyro_sensitivity:%f\n", priv->gyro_sensitivity);
+    printf("temp_sensitivity:%f\n", priv->temp_sensitivity);
+    printf("accel_fullscale:%f\n", priv->accel_fullscale);
+    printf("gyro_fullscale:%f\n", priv->gyro_fullscale);
+    printf("accel_odr:%f\n", priv->accel_odr);
+    printf("gyro_odr:%f\n", priv->gyro_odr);
+
     // turn the IMU on
     cmd_imu_enable_streaming(priv->hmd_ctrl, 0);
     ohmd_sleep(2);

@@ -15,6 +15,21 @@ typedef struct   {
 #define MAX_HID_INPUT_FIELD_SIZE_BYTES (63)  //send to host
 #define MAX_HID_OUTPUT_FIELD_SIZE_BYTES (63) 
 
+
+#define HID_REPORT_TYPE_IMU (0)
+#define HID_REPORT_TYPE_DEBUG (1)  //TODO:
+
+
+#define IMU_ACEEL_SENSITIVITY (0x10)
+#define IMU_ACEEL_FULLSCALE (0x11)
+#define IMU_ACEEL_ODR (0x12)
+
+#define IMU_GYRO_SENSITIVITY (0x30)
+#define IMU_GYRO_FULLSCALE (0x31)
+#define IMU_GYRO_ODR (0x32)
+
+#define IMU_TEMP_SENSITIVITY (0x40)
+
 #define OTUS_CMD_VERSION 0x00
 typedef enum _otus_cmd_id {
     //- common cmd 0x00-0x2F
@@ -38,6 +53,9 @@ typedef enum _otus_cmd_id {
     //- fucntion cmd 0x50 - 0x9F
     //- camera part 0x50 - 0x7F
     OTUS_SET_EXPOSURE_GAIN_CMD = 0x50,
+    OTUS_GET_EXPOSURE_GAIN_CMD = 0x51,
+
+
 
     //- imu part 0x80 - 0x9F
     OTUS_ENABLE_IMU_STREAMING = 0x80,
@@ -62,7 +80,7 @@ typedef struct  {
     uint8_t report_id;
     uint8_t cmd_type;
     uint8_t length;
-    uint8_t data[MAX_HID_OUTPUT_FIELD_SIZE_BYTES - 3];
+    uint8_t data[MAX_HID_OUTPUT_FIELD_SIZE_BYTES - 2];
 }HidCmdTx;
 
 // total 64 bytes send to host 
@@ -71,7 +89,7 @@ typedef struct  {
     uint8_t cmd_type;
     uint8_t status;
     uint8_t length;
-    uint8_t data[MAX_HID_INPUT_FIELD_SIZE_BYTES - 4];
+    uint8_t data[MAX_HID_INPUT_FIELD_SIZE_BYTES - 3];
 }HidCmdRx;
 
 
@@ -94,12 +112,19 @@ typedef struct  {
     uint8_t enable; //1:enable,0 disbale
 } HidCmdIMUEn;
 
+typedef struct  {
+    uint8_t type;
+    float val;
+} HidCmdIMUVal;
+
 #pragma pack(pop)
 
 
 
 int get_firmware_version(hid_device* hmd_imu, FirmwareVerion *version);
-int cmd_set_exposure_gain(hid_device* hmd_imu, uint8_t sensor_id, uint16_t exposure_us, uint16_t gain);
+
+int cmd_get_exposure_gain(hid_device* hmd_imu, uint8_t sensor_id, uint16_t *exposure_us, uint16_t *gain);
+int cmd_get_val(hid_device* hmd_imu, uint8_t type, float *val);
 
 int cmd_i2c_read(hid_device* hmd_imu, uint8_t addr_7bit,
     uint16_t reg, uint8_t reg_len,

@@ -12,9 +12,9 @@ int send_cmd(hid_device* hmd_imu, HidCmdTx *cmd_tx, HidCmdRx *cmd_rx)
 {
     int ret;
     int status = 0;
-    
-    ret = hid_write(hmd_imu,(uint8_t *)cmd_tx, sizeof(cmd_tx));
-    ret = hid_read(hmd_imu,(uint8_t *)cmd_rx, sizeof(cmd_rx), 1000);
+    int len = sizeof(HidCmdRx);
+    ret = hid_write(hmd_imu,(uint8_t *)cmd_tx, sizeof(HidCmdTx));
+    ret = hid_read_timeout(hmd_imu,(uint8_t *)cmd_rx, sizeof(HidCmdRx), 5000);
 
     status = cmd_rx->status;
     if (status != 0)
@@ -150,8 +150,6 @@ int cmd_set_exposure_gain(hid_device* hmd_imu, uint8_t sensor_id, uint16_t expos
     return ret;
 }
 
-
-
 int cmd_imu_enable_streaming(hid_device* hmd_imu, uint8_t enable)
 {
     int ret = 0;
@@ -177,3 +175,37 @@ int cmd_imu_enable_streaming(hid_device* hmd_imu, uint8_t enable)
     return ret;
 }
 
+int cmd_get_val(hid_device* hmd_imu, uint8_t type, float *val)
+{
+    int ret = 0;
+    HidCmdTx cmd_tx;
+    HidCmdRx cmd_rx;
+    HidCmdIMUVal cmd_imu_val_tx;
+    HidCmdIMUVal cmd_imu_val_rx;
+    memset(&cmd_tx, 0, sizeof(cmd_tx));
+
+
+    cmd_tx.report_id = OTUS_DATA_REPORT_ID;
+    cmd_tx.cmd_type = OUTS_IMU_GET_VAL;
+    cmd_tx.length = sizeof(cmd_imu_val_tx);
+
+    cmd_imu_val_tx.type = type;
+    cmd_imu_val_tx.val = 0.0;
+   
+
+    memcpy(cmd_tx.data, &cmd_imu_val_tx, sizeof(cmd_imu_val_tx));
+
+    ret = send_cmd(hmd_imu, &cmd_tx, &cmd_rx);
+    if (ret != 0)
+    {
+        return ret;
+    }
+
+    memcpy(&cmd_imu_val_rx, cmd_rx.data, sizeof(cmd_imu_val_rx));
+
+    *val = cmd_imu_val_rx.val;
+    return ret;
+
+
+
+}

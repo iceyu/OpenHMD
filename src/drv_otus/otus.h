@@ -13,8 +13,6 @@
 #define HID_OTUS_USAGE    0x06
 #define HID_OTUS_IMU_DATA_USAGE    0x76
 
-#define HID_REPORT_TYPE_IMU (0)
-#define HID_REPORT_TYPE_DEBUG (1)  //TODO:
 
 
 #pragma pack(push, 1)
