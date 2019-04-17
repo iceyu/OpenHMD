@@ -17,8 +17,10 @@
 
 
 #define TICK_LEN (1.0f / 16660000.0f) // 1666 Hz ticks
-void vec3f_from_OTUS_gyro(int16_t smp[3][8], int i, vec3f* out_vec);
-void vec3f_from_OTUS_accel(int16_t smp[3][8], int i, vec3f* out_vec);
+void vec3f_from_gyro(int16_t smp[3][8], int i, vec3f* out_vec);
+void vec3f_from_accel(int16_t smp[3][8], int i, vec3f* out_vec);
+
+FILE *fp;
 
 typedef struct {
 	ohmd_device base;
@@ -45,20 +47,20 @@ typedef struct {
 
 } otus_priv;
 
-void vec3f_from_OTUS_gyro(otus_priv *priv,int16_t smp[8][3], int i, vec3f* out_vec)
+void vec3f_from_gyro(otus_priv *priv,int16_t smp[8][3], int i, vec3f* out_vec)
 {
 
         for (int j = 0; j < 3; j++)
         {
             float sample = (float)smp[i][j];
-            out_vec->arr[j] = sample * priv->gyro_sensitivity;
+            out_vec->arr[j] = sample * priv->gyro_sensitivity/1000;
         }
   
     return;
 
 }
 
-void vec3f_from_OTUS_accel(otus_priv *priv, int16_t smp[8][3], int i, vec3f* out_vec)
+void vec3f_from_accel(otus_priv *priv, int16_t smp[8][3], int i, vec3f* out_vec)
 {
    
         for (int j = 0; j < 3; j++)
@@ -86,35 +88,36 @@ static void handle_tracker_sensor_msg(otus_priv* priv, unsigned char* buffer, in
 
 	for(int i = 0; i < 8; i++){
 		uint64_t tick_delta = 1000;
-		if(last_sample_tick > 0) //startup correction
-			tick_delta = imu_report->gyro_timestamp[i] - last_sample_tick;
+        if (last_sample_tick > 0) //startup correction
+        {
+            tick_delta = imu_report->gyro_timestamp[i] - last_sample_tick;
+        }
 
 		float dt = tick_delta * TICK_LEN;
 
-
-      
-		vec3f_from_OTUS_gyro(priv,imu_report->gyro, i, &priv->raw_gyro);
-		vec3f_from_OTUS_accel(priv,imu_report->accel, i, &priv->raw_accel);
+		vec3f_from_gyro(priv,imu_report->gyro, i, &priv->raw_gyro);
+		vec3f_from_accel(priv,imu_report->accel, i, &priv->raw_accel);
         last_ts = new_ts;
-        new_ts = imu_report->gyro_timestamp[i];            
-        //printf("%.4f,%u,%ul\n", 0, imu_report->frame_id+i,imu_report->gyro_timestamp[i]);
+        new_ts = imu_report->gyro_timestamp[i];    
+       
 
-        if(count>500)
+        //printf("%.4f,%u,%ul\n", 0, imu_report->frame_id+i,imu_report->gyro_timestamp[i]);
+        float gravity = sqrt(priv->raw_accel.x*priv->raw_accel.x + priv->raw_accel.y*priv->raw_accel.y + priv->raw_accel.z*priv->raw_accel.z);
+        
+        printf("%u,%.4f,%.4f,%.4f\n", imu_report->frame_id,priv->raw_accel.x, priv->raw_accel.y, priv->raw_accel.z);
+        char buf[512] = {0};
+        int len=sprintf(buf, "%f,%f,%f,%f,%f,%f,%f\n", ((float)imu_report->gyro_timestamp[i] * 1e-7),
+            priv->raw_accel.x, priv->raw_accel.y, priv->raw_accel.z,
+            priv->raw_gyro.x, priv->raw_gyro.y, priv->raw_gyro.z
+            );
+
+        fwrite(buf, len, 1, fp);
+        if (priv->raw_gyro.z < -1.0)
         {
-            float fps = 1 / ((float)(new_ts - last_ts) / 10000000.f);
-            
-            printf("%.4f,%.4f,%.4f\n", priv->raw_accel.x, priv->raw_accel.y, priv->raw_accel.z);
             count = 0;
         }
-        //else
-        {
-            count++;
-        }
 
-    
-        
 
-		ofusion_update(&priv->sensor_fusion, dt, &priv->raw_gyro, &priv->raw_accel, &mag);
 
 		last_sample_tick = imu_report->gyro_timestamp[i];
 	}
@@ -186,7 +189,10 @@ static int getf(ohmd_device* device, ohmd_float_value type, float* out)
 static void close_device(ohmd_device* device)
 {
     otus_priv* priv = (otus_priv*)device;
-
+    if(fp!=NULL)
+    {
+        close(fp);
+    }
 	LOGD("closing Otus Sensors device");
     cmd_imu_enable_streaming(priv->hmd_ctrl, 0);
     if (priv->hmd_imu != NULL)
@@ -251,6 +257,13 @@ static ohmd_device* open_device(ohmd_driver* driver, ohmd_device_desc* desc)
 {
     otus_priv* priv = ohmd_alloc(driver->ctx, sizeof(otus_priv));
 	unsigned char *config;
+
+    fp = fopen("./csv_file.csv", "wt");
+    if (fp == NULL)
+    {
+        return NULL;
+    }
+
 	bool samsung = false;
     int ret = 0;
 	if(!priv)
@@ -298,17 +311,19 @@ static ohmd_device* open_device(ohmd_driver* driver, ohmd_device_desc* desc)
     printf("accel_odr:%f\n", priv->accel_odr);
     printf("gyro_odr:%f\n", priv->gyro_odr);
 
+    cmd_set_exposure_gain(priv->hmd_ctrl, -1, 25000, 64);
+
     // turn the IMU on
     cmd_imu_enable_streaming(priv->hmd_ctrl, 0);
-    ohmd_sleep(2);
+    ohmd_sleep(0.002);//2ms
     cmd_imu_enable_streaming(priv->hmd_ctrl, 1);
-    
+
+
 	// set up device callbacks
 	priv->base.update = update_device;
 	priv->base.close = close_device;
 	priv->base.getf = getf;
 
-	ofusion_init(&priv->sensor_fusion);
 
 	return (ohmd_device*)priv;
 

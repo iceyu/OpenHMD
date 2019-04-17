@@ -36,6 +36,7 @@ typedef enum _otus_cmd_id {
     OTUS_GET_FIRMWARE_VERSION = 0x00,
     OTUS_GET_CMD_VERSION = 0x01,
     OTUS_RESET_DEVICE = 0x02,
+    
     //- device cmd  0x30 - 0x5F
     OTUS_I2C_READ = 0x20,
     OTUS_I2C_WRITE = 0x21,
