@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "*.md": "markdown",
+        "psvr.h": "c",
+        "wick.h": "c",
+        "string.h": "c",
+        "otus.h": "c",
+        "stdint.h": "c",
+        "stdlib.h": "c",
+        "wmr.h": "c"
+    }
+}

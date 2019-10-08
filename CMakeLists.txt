@@ -28,7 +28,8 @@ set(openhmd_source_files
 option(OPENHMD_DRIVER_OCULUS_RIFT "Oculus Rift DK1 and DK2" OFF)
 option(OPENHMD_DRIVER_DEEPOON "Deepoon E2" OFF)
 option(OPENHMD_DRIVER_WMR "Windows Mixed Reality" OFF)
-option(OPENHMD_DRIVER_OTUS "Otus" ON)
+option(OPENHMD_DRIVER_OTUS "Otus" OFF)
+option(OPENHMD_DRIVER_WICK "Wick" ON)
 option(OPENHMD_DRIVER_PSVR "Sony PSVR" OFF)
 option(OPENHMD_DRIVER_HTC_VIVE "HTC Vive" OFF)
 option(OPENHMD_DRIVER_NOLO "NOLO VR CV1" OFF)
@@ -90,6 +91,19 @@ if(OPENHMD_DRIVER_OTUS)
 	set(LIBS ${LIBS} ${HIDAPI_LIBRARIES})
 endif(OPENHMD_DRIVER_OTUS)
 
+if(OPENHMD_DRIVER_WICK)
+	set(openhmd_source_files ${openhmd_source_files}
+	${CMAKE_CURRENT_LIST_DIR}/src/drv_wick/wick.c
+	${CMAKE_CURRENT_LIST_DIR}/src/drv_wick/packet.c
+	${CMAKE_CURRENT_LIST_DIR}/src/drv_wick/wick.h
+	)
+
+	add_definitions(-DDRIVER_WICK)
+	find_package(HIDAPI REQUIRED)
+
+	include_directories(${HIDAPI_INCLUDE_DIRS})
+	set(LIBS ${LIBS} ${HIDAPI_LIBRARIES})
+endif(OPENHMD_DRIVER_WICK)
 
 if(OPENHMD_DRIVER_PSVR)
 	set(openhmd_source_files ${openhmd_source_files}
@@ -156,6 +170,7 @@ if (OPENHMD_DRIVER_ANDROID)
 endif(OPENHMD_DRIVER_ANDROID)
 
 if (OPENHMD_EXAMPLE_SIMPLE)
+	set(CMAKE_VERBOSE_MAKEFILE ON)
 	add_subdirectory(./examples/simple)
 endif(OPENHMD_EXAMPLE_SIMPLE)
 
