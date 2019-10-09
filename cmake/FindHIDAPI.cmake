@@ -25,6 +25,8 @@
 
 find_library(HIDAPI_LIBRARY
 	NAMES hidapi hidapi-libusb)
+set(HIDAPI_LIBRARY "/usr/local/lib/libhidapi-hidraw.so")	
+message(STATUS ${HIDAPI_LIBRARY})
 
 find_path(HIDAPI_INCLUDE_DIR
 	NAMES hidapi.h
