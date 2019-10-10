@@ -98,7 +98,6 @@ int main(int argc, char **argv)
 	// 		int device_class = 0, device_flags = 0;
 	// 		const char *device_class_s[] = {"HMD", "Controller", "Generic Tracker", "Unknown"};
 
-	// 		ohmd_list_geti(ctx, i, OHMD_DEVICE_CLASS, &device_class);
 	// 		ohmd_list_geti(ctx, i, OHMD_DEVICE_FLAGS, &device_flags);
 
 	// 		printf("device %d\n", i);
@@ -154,5 +153,5 @@ int main(int argc, char **argv)
 	// 	ohmd_ctx_destroy(ctx);
 
 #endif
-	return 0;
+	return 1;
 }
