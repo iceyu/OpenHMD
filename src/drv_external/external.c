@@ -8,71 +8,75 @@
 
 /* External Driver */
 
-
 #include "../openhmdi.h"
 #include "string.h"
 
-typedef struct {
+typedef struct
+{
 	ohmd_device base;
 	fusion sensor_fusion;
 } external_priv;
 
-static void update_device(ohmd_device* device)
+static void update_device(ohmd_device *device)
 {
 }
 
-static int getf(ohmd_device* device, ohmd_float_value type, float* out)
+static int getf(ohmd_device *device, ohmd_float_value type, float *out)
 {
-	external_priv* priv = (external_priv*)device;
+	external_priv *priv = (external_priv *)device;
 
-	switch(type){
-		case OHMD_ROTATION_QUAT: {
-				*(quatf*)out = priv->sensor_fusion.orient;
-				break;
-			}
+	switch (type)
+	{
+	case OHMD_ROTATION_QUAT:
+	{
+		*(quatf *)out = priv->sensor_fusion.orient;
+		break;
+	}
 
-		case OHMD_POSITION_VECTOR:
-			out[0] = out[1] = out[2] = 0;
-			break;
+	case OHMD_POSITION_VECTOR:
+		out[0] = out[1] = out[2] = 0;
+		break;
 
-		default:
-			ohmd_set_error(priv->base.ctx, "invalid type given to getf (%d)", type);
-			return -1;
-			break;
+	default:
+		ohmd_set_error(priv->base.ctx, "invalid type given to getf (%d)", type);
+		return -1;
+		break;
 	}
 
 	return 0;
 }
 
-static int setf(ohmd_device* device, ohmd_float_value type, const float* in)
+static int setf(ohmd_device *device, ohmd_float_value type, const float *in)
 {
-	external_priv* priv = (external_priv*)device;
+	external_priv *priv = (external_priv *)device;
 
-	switch(type){
-		case OHMD_EXTERNAL_SENSOR_FUSION: {
-				ofusion_update(&priv->sensor_fusion, *in, (vec3f*)(in + 1), (vec3f*)(in + 4), (vec3f*)(in + 7));
-			}
-			break;
+	switch (type)
+	{
+	case OHMD_EXTERNAL_SENSOR_FUSION:
+	{
+		ofusion_update(&priv->sensor_fusion, *in, (vec3f *)(in + 1), (vec3f *)(in + 4), (vec3f *)(in + 7));
+	}
+	break;
 
-		default:
-			ohmd_set_error(priv->base.ctx, "invalid type given to setf (%d)", type);
-			return -1;
-			break;
+	default:
+		ohmd_set_error(priv->base.ctx, "invalid type given to setf (%d)", type);
+		return -1;
+		break;
 	}
 
 	return 0;
 }
 
-static void close_device(ohmd_device* device)
+static void close_device(ohmd_device *device)
 {
 	LOGD("closing external device");
 	free(device);
 }
 
-static ohmd_device* open_device(ohmd_driver* driver, ohmd_device_desc* desc)
+static ohmd_device *open_device(ohmd_driver *driver, ohmd_device_desc *desc)
 {
-	external_priv* priv = ohmd_alloc(driver->ctx, sizeof(external_priv));
-	if(!priv)
+	external_priv *priv = ohmd_alloc(driver->ctx, sizeof(external_priv));
+	if (!priv)
 		return NULL;
 
 	// Set default device properties
@@ -98,38 +102,36 @@ static ohmd_device* open_device(ohmd_driver* driver, ohmd_device_desc* desc)
 	priv->base.close = close_device;
 	priv->base.getf = getf;
 	priv->base.setf = setf;
-	
+
 	ofusion_init(&priv->sensor_fusion);
 
-	return (ohmd_device*)priv;
+	return (ohmd_device *)priv;
 }
 
-static void get_device_list(ohmd_driver* driver, ohmd_device_list* list)
+static void get_device_list(ohmd_driver *driver, ohmd_device_list *list)
 {
-	ohmd_device_desc* desc = &list->devices[list->num_devices++];
-
+	ohmd_device_desc *desc = &list->devices[list->num_devices++];
 	strcpy(desc->driver, "OpenHMD Generic External Driver");
 	strcpy(desc->vendor, "OpenHMD");
 	strcpy(desc->product, "External Device");
 
 	strcpy(desc->path, "(none)");
-		
 	desc->device_class = OHMD_DEVICE_CLASS_HMD;
 	desc->device_flags = OHMD_DEVICE_FLAGS_ROTATIONAL_TRACKING | OHMD_DEVICE_FLAGS_POSITIONAL_TRACKING;
 
 	desc->driver_ptr = driver;
 }
 
-static void destroy_driver(ohmd_driver* drv)
+static void destroy_driver(ohmd_driver *drv)
 {
 	LOGD("shutting down external driver");
 	free(drv);
 }
 
-ohmd_driver* ohmd_create_external_drv(ohmd_context* ctx)
+ohmd_driver *ohmd_create_external_drv(ohmd_context *ctx)
 {
-	ohmd_driver* drv = ohmd_alloc(ctx, sizeof(ohmd_driver));
-	if(!drv)
+	ohmd_driver *drv = ohmd_alloc(ctx, sizeof(ohmd_driver));
+	if (!drv)
 		return NULL;
 
 	drv->get_device_list = get_device_list;

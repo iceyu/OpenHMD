@@ -154,6 +154,7 @@ ohmd_driver *ohmd_create_oculus_rift_drv(ohmd_context *ctx);
 ohmd_driver *ohmd_create_deepoon_drv(ohmd_context *ctx);
 ohmd_driver *ohmd_create_htc_vive_drv(ohmd_context *ctx);
 ohmd_driver *ohmd_create_wmr_drv(ohmd_context *ctx);
+ohmd_driver *ohmd_create_wick_drv(ohmd_context *ctx);
 ohmd_driver *ohmd_create_otus_drv(ohmd_context *ctx);
 ohmd_driver *ohmd_create_psvr_drv(ohmd_context *ctx);
 ohmd_driver *ohmd_create_nolo_drv(ohmd_context *ctx);

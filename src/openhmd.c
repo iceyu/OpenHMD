@@ -7,7 +7,6 @@
 
 /* Main Lib Implementation */
 
-
 #include "openhmdi.h"
 #include "shaders.h"
 #include <stdlib.h>
@@ -17,10 +16,11 @@
 // Running automatic updates at 1000 Hz
 #define AUTOMATIC_UPDATE_SLEEP (1.0 / 1000.0)
 
-ohmd_context* OHMD_APIENTRY ohmd_ctx_create(void)
+ohmd_context *OHMD_APIENTRY ohmd_ctx_create(void)
 {
-	ohmd_context* ctx = calloc(1, sizeof(ohmd_context));
-	if(!ctx){
+	ohmd_context *ctx = calloc(1, sizeof(ohmd_context));
+	if (!ctx)
+	{
 		LOGE("could not allocate RAM for context");
 		return NULL;
 	}
@@ -42,8 +42,13 @@ ohmd_context* OHMD_APIENTRY ohmd_ctx_create(void)
 #if DRIVER_WMR
 	ctx->drivers[ctx->num_drivers++] = ohmd_create_wmr_drv(ctx);
 #endif
+
+#if DRIVER_WICK
+	ctx->drivers[ctx->num_drivers++] = ohmd_create_wick_drv(ctx);
+#endif
+
 #if DRIVER_OTUS
-    ctx->drivers[ctx->num_drivers++] = ohmd_create_otus_drv(ctx);
+	ctx->drivers[ctx->num_drivers++] = ohmd_create_otus_drv(ctx);
 #endif
 #if DRIVER_PSVR
 	ctx->drivers[ctx->num_drivers++] = ohmd_create_psvr_drv(ctx);
@@ -72,19 +77,22 @@ ohmd_context* OHMD_APIENTRY ohmd_ctx_create(void)
 	return ctx;
 }
 
-void OHMD_APIENTRY ohmd_ctx_destroy(ohmd_context* ctx)
+void OHMD_APIENTRY ohmd_ctx_destroy(ohmd_context *ctx)
 {
 	ctx->update_request_quit = true;
 
-	for(int i = 0; i < ctx->num_active_devices; i++){
+	for (int i = 0; i < ctx->num_active_devices; i++)
+	{
 		ctx->active_devices[i]->close(ctx->active_devices[i]);
 	}
 
-	for(int i = 0; i < ctx->num_drivers; i++){
+	for (int i = 0; i < ctx->num_drivers; i++)
+	{
 		ctx->drivers[i]->destroy(ctx->drivers[i]);
 	}
 
-	if(ctx->update_thread){
+	if (ctx->update_thread)
+	{
 		ohmd_destroy_thread(ctx->update_thread);
 		ohmd_destroy_mutex(ctx->update_mutex);
 	}
@@ -92,38 +100,41 @@ void OHMD_APIENTRY ohmd_ctx_destroy(ohmd_context* ctx)
 	free(ctx);
 }
 
-void OHMD_APIENTRY ohmd_ctx_update(ohmd_context* ctx)
+void OHMD_APIENTRY ohmd_ctx_update(ohmd_context *ctx)
 {
-	for(int i = 0; i < ctx->num_active_devices; i++){
-		ohmd_device* dev = ctx->active_devices[i];
-		if(!dev->settings.automatic_update && dev->update)
+	for (int i = 0; i < ctx->num_active_devices; i++)
+	{
+		ohmd_device *dev = ctx->active_devices[i];
+		if (!dev->settings.automatic_update && dev->update)
 			dev->update(dev);
 
 		ohmd_lock_mutex(ctx->update_mutex);
-		dev->getf(dev, OHMD_POSITION_VECTOR, (float*)&dev->position);
-		dev->getf(dev, OHMD_ROTATION_QUAT, (float*)&dev->rotation);
+		dev->getf(dev, OHMD_POSITION_VECTOR, (float *)&dev->position);
+		dev->getf(dev, OHMD_ROTATION_QUAT, (float *)&dev->rotation);
 		ohmd_unlock_mutex(ctx->update_mutex);
 	}
 }
 
-const char* OHMD_APIENTRY ohmd_ctx_get_error(ohmd_context* ctx)
+const char *OHMD_APIENTRY ohmd_ctx_get_error(ohmd_context *ctx)
 {
 	return ctx->error_msg;
 }
 
-int OHMD_APIENTRY ohmd_ctx_probe(ohmd_context* ctx)
+int OHMD_APIENTRY ohmd_ctx_probe(ohmd_context *ctx)
 {
 	memset(&ctx->list, 0, sizeof(ohmd_device_list));
-	for(int i = 0; i < ctx->num_drivers; i++){
+	for (int i = 0; i < ctx->num_drivers; i++)
+	{
 		ctx->drivers[i]->get_device_list(ctx->drivers[i], &ctx->list);
 	}
 
 	return ctx->list.num_devices;
 }
 
-int OHMD_APIENTRY ohmd_gets(ohmd_string_description type, const char ** out)
+int OHMD_APIENTRY ohmd_gets(ohmd_string_description type, const char **out)
 {
-	switch(type){
+	switch (type)
+	{
 	case OHMD_GLSL_DISTORTION_VERT_SRC:
 		*out = distortion_vert;
 		return OHMD_S_OK;
@@ -147,12 +158,13 @@ int OHMD_APIENTRY ohmd_gets(ohmd_string_description type, const char ** out)
 	}
 }
 
-const char* OHMD_APIENTRY ohmd_list_gets(ohmd_context* ctx, int index, ohmd_string_value type)
+const char *OHMD_APIENTRY ohmd_list_gets(ohmd_context *ctx, int index, ohmd_string_value type)
 {
-	if(index >= ctx->list.num_devices)
+	if (index >= ctx->list.num_devices)
 		return NULL;
 
-	switch(type){
+	switch (type)
+	{
 	case OHMD_VENDOR:
 		return ctx->list.devices[index].vendor;
 	case OHMD_PRODUCT:
@@ -164,12 +176,13 @@ const char* OHMD_APIENTRY ohmd_list_gets(ohmd_context* ctx, int index, ohmd_stri
 	}
 }
 
-int OHMD_APIENTRY ohmd_list_geti(ohmd_context* ctx, int index, ohmd_int_value type, int* out)
+int OHMD_APIENTRY ohmd_list_geti(ohmd_context *ctx, int index, ohmd_int_value type, int *out)
 {
-	if(index >= ctx->list.num_devices)
+	if (index >= ctx->list.num_devices)
 		return OHMD_S_INVALID_PARAMETER;
 
-	switch(type){
+	switch (type)
+	{
 	case OHMD_DEVICE_CLASS:
 		*out = ctx->list.devices[index].device_class;
 		return OHMD_S_OK;
@@ -183,16 +196,17 @@ int OHMD_APIENTRY ohmd_list_geti(ohmd_context* ctx, int index, ohmd_int_value ty
 	}
 }
 
-static unsigned int ohmd_update_thread(void* arg)
+static unsigned int ohmd_update_thread(void *arg)
 {
-	ohmd_context* ctx = (ohmd_context*)arg;
+	ohmd_context *ctx = (ohmd_context *)arg;
 
-	while(!ctx->update_request_quit)
+	while (!ctx->update_request_quit)
 	{
 		ohmd_lock_mutex(ctx->update_mutex);
 
-		for(int i = 0; i < ctx->num_active_devices; i++){
-			if(ctx->active_devices[i]->settings.automatic_update && ctx->active_devices[i]->update)
+		for (int i = 0; i < ctx->num_active_devices; i++)
+		{
+			if (ctx->active_devices[i]->settings.automatic_update && ctx->active_devices[i]->update)
 				ctx->active_devices[i]->update(ctx->active_devices[i]);
 		}
 
@@ -204,25 +218,28 @@ static unsigned int ohmd_update_thread(void* arg)
 	return 0;
 }
 
-static void ohmd_set_up_update_thread(ohmd_context* ctx)
+static void ohmd_set_up_update_thread(ohmd_context *ctx)
 {
-	if(!ctx->update_thread){
+	if (!ctx->update_thread)
+	{
 		ctx->update_mutex = ohmd_create_mutex(ctx);
 		ctx->update_thread = ohmd_create_thread(ctx, ohmd_update_thread, ctx);
 	}
 }
 
-ohmd_device* OHMD_APIENTRY ohmd_list_open_device_s(ohmd_context* ctx, int index, ohmd_device_settings* settings)
+ohmd_device *OHMD_APIENTRY ohmd_list_open_device_s(ohmd_context *ctx, int index, ohmd_device_settings *settings)
 {
 	ohmd_lock_mutex(ctx->update_mutex);
 
-	if(index >= 0 && index < ctx->list.num_devices){
+	if (index >= 0 && index < ctx->list.num_devices)
+	{
 
-		ohmd_device_desc* desc = &ctx->list.devices[index];
-		ohmd_driver* driver = (ohmd_driver*)desc->driver_ptr;
-		ohmd_device* device = driver->open_device(driver, desc);
+		ohmd_device_desc *desc = &ctx->list.devices[index];
+		ohmd_driver *driver = (ohmd_driver *)desc->driver_ptr;
+		ohmd_device *device = driver->open_device(driver, desc);
 
-		if (device == NULL) {
+		if (device == NULL)
+		{
 			ohmd_set_error(ctx, "Could not open device with index: %d, check device permissions?", index);
 			ohmd_unlock_mutex(ctx->update_mutex);
 			return NULL;
@@ -238,7 +255,7 @@ ohmd_device* OHMD_APIENTRY ohmd_list_open_device_s(ohmd_context* ctx, int index,
 
 		ohmd_unlock_mutex(ctx->update_mutex);
 
-		if(device->settings.automatic_update)
+		if (device->settings.automatic_update)
 			ohmd_set_up_update_thread(ctx);
 
 		return device;
@@ -250,7 +267,7 @@ ohmd_device* OHMD_APIENTRY ohmd_list_open_device_s(ohmd_context* ctx, int index,
 	return NULL;
 }
 
-ohmd_device* OHMD_APIENTRY ohmd_list_open_device(ohmd_context* ctx, int index)
+ohmd_device *OHMD_APIENTRY ohmd_list_open_device(ohmd_context *ctx, int index)
 {
 	ohmd_device_settings settings;
 
@@ -259,21 +276,21 @@ ohmd_device* OHMD_APIENTRY ohmd_list_open_device(ohmd_context* ctx, int index)
 	return ohmd_list_open_device_s(ctx, index, &settings);
 }
 
-int OHMD_APIENTRY ohmd_close_device(ohmd_device* device)
+int OHMD_APIENTRY ohmd_close_device(ohmd_device *device)
 {
 	ohmd_lock_mutex(device->ctx->update_mutex);
 
-	ohmd_context* ctx = device->ctx;
+	ohmd_context *ctx = device->ctx;
 	int idx = device->active_device_idx;
 
 	memmove(ctx->active_devices + idx, ctx->active_devices + idx + 1,
-		sizeof(ohmd_device*) * (ctx->num_active_devices - idx - 1));
+			sizeof(ohmd_device *) * (ctx->num_active_devices - idx - 1));
 
 	device->close(device);
 
 	ctx->num_active_devices--;
 
-	for(int i = idx; i < ctx->num_active_devices; i++)
+	for (int i = idx; i < ctx->num_active_devices; i++)
 		ctx->active_devices[i]->active_device_idx--;
 
 	ohmd_unlock_mutex(ctx->update_mutex);
@@ -281,36 +298,39 @@ int OHMD_APIENTRY ohmd_close_device(ohmd_device* device)
 	return OHMD_S_OK;
 }
 
-static int ohmd_device_getf_unp(ohmd_device* device, ohmd_float_value type, float* out)
+static int ohmd_device_getf_unp(ohmd_device *device, ohmd_float_value type, float *out)
 {
-	switch(type){
-	case OHMD_LEFT_EYE_GL_MODELVIEW_MATRIX: {
-			vec3f point = {{0, 0, 0}};
-			quatf rot = device->rotation;
-			oquatf_mult_me(&rot, &device->rotation_correction);
-			mat4x4f orient, world_shift, result;
-			omat4x4f_init_look_at(&orient, &rot, &point);
-			omat4x4f_init_translate(&world_shift, -device->position.x +(device->properties.ipd / 2.0f), -device->position.y, -device->position.z);
-			omat4x4f_mult(&orient, &world_shift, &result);
-			omat4x4f_transpose(&result, (mat4x4f*)out);
-			return OHMD_S_OK;
-		}
-	case OHMD_RIGHT_EYE_GL_MODELVIEW_MATRIX: {
-			vec3f point = {{0, 0, 0}};
-			quatf rot = device->rotation;
-			oquatf_mult_me(&rot, &device->rotation_correction);
-			mat4x4f orient, world_shift, result;
-			omat4x4f_init_look_at(&orient, &rot, &point);
-			omat4x4f_init_translate(&world_shift, -device->position.x + -(device->properties.ipd / 2.0f), -device->position.y, -device->position.z);
-			omat4x4f_mult(&orient, &world_shift, &result);
-			omat4x4f_transpose(&result, (mat4x4f*)out);
-			return OHMD_S_OK;
-		}
+	switch (type)
+	{
+	case OHMD_LEFT_EYE_GL_MODELVIEW_MATRIX:
+	{
+		vec3f point = {{0, 0, 0}};
+		quatf rot = device->rotation;
+		oquatf_mult_me(&rot, &device->rotation_correction);
+		mat4x4f orient, world_shift, result;
+		omat4x4f_init_look_at(&orient, &rot, &point);
+		omat4x4f_init_translate(&world_shift, -device->position.x + (device->properties.ipd / 2.0f), -device->position.y, -device->position.z);
+		omat4x4f_mult(&orient, &world_shift, &result);
+		omat4x4f_transpose(&result, (mat4x4f *)out);
+		return OHMD_S_OK;
+	}
+	case OHMD_RIGHT_EYE_GL_MODELVIEW_MATRIX:
+	{
+		vec3f point = {{0, 0, 0}};
+		quatf rot = device->rotation;
+		oquatf_mult_me(&rot, &device->rotation_correction);
+		mat4x4f orient, world_shift, result;
+		omat4x4f_init_look_at(&orient, &rot, &point);
+		omat4x4f_init_translate(&world_shift, -device->position.x + -(device->properties.ipd / 2.0f), -device->position.y, -device->position.z);
+		omat4x4f_mult(&orient, &world_shift, &result);
+		omat4x4f_transpose(&result, (mat4x4f *)out);
+		return OHMD_S_OK;
+	}
 	case OHMD_LEFT_EYE_GL_PROJECTION_MATRIX:
-		omat4x4f_transpose(&device->properties.proj_left, (mat4x4f*)out);
+		omat4x4f_transpose(&device->properties.proj_left, (mat4x4f *)out);
 		return OHMD_S_OK;
 	case OHMD_RIGHT_EYE_GL_PROJECTION_MATRIX:
-		omat4x4f_transpose(&device->properties.proj_right, (mat4x4f*)out);
+		omat4x4f_transpose(&device->properties.proj_right, (mat4x4f *)out);
 		return OHMD_S_OK;
 
 	case OHMD_SCREEN_HORIZONTAL_SIZE:
@@ -349,27 +369,31 @@ static int ohmd_device_getf_unp(ohmd_device* device, ohmd_float_value type, floa
 
 	case OHMD_ROTATION_QUAT:
 	{
-		*(quatf*)out = device->rotation;
+		*(quatf *)out = device->rotation;
 
-		oquatf_mult_me((quatf*)out, &device->rotation_correction);
+		oquatf_mult_me((quatf *)out, &device->rotation_correction);
 		return OHMD_S_OK;
 	}
 	case OHMD_POSITION_VECTOR:
 	{
-		*(vec3f*)out = device->position;
-		for(int i = 0; i < 3; i++)
+		*(vec3f *)out = device->position;
+		for (int i = 0; i < 3; i++)
 			out[i] += device->position_correction.arr[i];
-		
+
 		return OHMD_S_OK;
 	}
-	case OHMD_UNIVERSAL_DISTORTION_K: {
-		for (int i = 0; i < 4; i++) {
+	case OHMD_UNIVERSAL_DISTORTION_K:
+	{
+		for (int i = 0; i < 4; i++)
+		{
 			out[i] = device->properties.universal_distortion_k[i];
 		}
 		return OHMD_S_OK;
 	}
-	case OHMD_UNIVERSAL_ABERRATION_K: {
-		for (int i = 0; i < 3; i++) {
+	case OHMD_UNIVERSAL_ABERRATION_K:
+	{
+		for (int i = 0; i < 3; i++)
+		{
 			out[i] = device->properties.universal_aberration_k[i];
 		}
 		return OHMD_S_OK;
@@ -379,7 +403,7 @@ static int ohmd_device_getf_unp(ohmd_device* device, ohmd_float_value type, floa
 	}
 }
 
-int OHMD_APIENTRY ohmd_device_getf(ohmd_device* device, ohmd_float_value type, float* out)
+int OHMD_APIENTRY ohmd_device_getf(ohmd_device *device, ohmd_float_value type, float *out)
 {
 	ohmd_lock_mutex(device->ctx->update_mutex);
 	int ret = ohmd_device_getf_unp(device, type, out);
@@ -388,9 +412,10 @@ int OHMD_APIENTRY ohmd_device_getf(ohmd_device* device, ohmd_float_value type, f
 	return ret;
 }
 
-int ohmd_device_setf_unp(ohmd_device* device, ohmd_float_value type, const float* in)
+int ohmd_device_setf_unp(ohmd_device *device, ohmd_float_value type, const float *in)
 {
-	switch(type){
+	switch (type)
+	{
 	case OHMD_EYE_IPD:
 		device->properties.ipd = *in;
 		return OHMD_S_OK;
@@ -401,46 +426,48 @@ int ohmd_device_setf_unp(ohmd_device* device, ohmd_float_value type, const float
 		device->properties.znear = *in;
 		return OHMD_S_OK;
 	case OHMD_ROTATION_QUAT:
+	{
+		// adjust rotation correction
+		quatf q;
+		int ret = device->getf(device, OHMD_ROTATION_QUAT, (float *)&q);
+
+		if (ret != 0)
 		{
-			// adjust rotation correction
-			quatf q;
-			int ret = device->getf(device, OHMD_ROTATION_QUAT, (float*)&q);
-
-			if(ret != 0){
-				return ret;
-			}
-
-			oquatf_diff(&q, (quatf*)in, &device->rotation_correction);
-			return OHMD_S_OK;
+			return ret;
 		}
+
+		oquatf_diff(&q, (quatf *)in, &device->rotation_correction);
+		return OHMD_S_OK;
+	}
 	case OHMD_POSITION_VECTOR:
+	{
+		// adjust position correction
+		vec3f v;
+		int ret = device->getf(device, OHMD_POSITION_VECTOR, (float *)&v);
+
+		if (ret != 0)
 		{
-			// adjust position correction
-			vec3f v;
-			int ret = device->getf(device, OHMD_POSITION_VECTOR, (float*)&v);
-
-			if(ret != 0){
-				return ret;
-			}
-
-			for(int i = 0; i < 3; i++)
-				device->position_correction.arr[i] = in[i] - v.arr[i];
-
-			return OHMD_S_OK;
+			return ret;
 		}
+
+		for (int i = 0; i < 3; i++)
+			device->position_correction.arr[i] = in[i] - v.arr[i];
+
+		return OHMD_S_OK;
+	}
 	case OHMD_EXTERNAL_SENSOR_FUSION:
-		{
-			if(device->setf == NULL)
-				return OHMD_S_UNSUPPORTED;
+	{
+		if (device->setf == NULL)
+			return OHMD_S_UNSUPPORTED;
 
-			return device->setf(device, type, in);
-		}
+		return device->setf(device, type, in);
+	}
 	default:
 		return OHMD_S_INVALID_PARAMETER;
 	}
 }
 
-int OHMD_APIENTRY ohmd_device_setf(ohmd_device* device, ohmd_float_value type, const float* in)
+int OHMD_APIENTRY ohmd_device_setf(ohmd_device *device, ohmd_float_value type, const float *in)
 {
 	ohmd_lock_mutex(device->ctx->update_mutex);
 	int ret = ohmd_device_setf_unp(device, type, in);
@@ -449,60 +476,62 @@ int OHMD_APIENTRY ohmd_device_setf(ohmd_device* device, ohmd_float_value type, c
 	return ret;
 }
 
-int OHMD_APIENTRY ohmd_device_geti(ohmd_device* device, ohmd_int_value type, int* out)
+int OHMD_APIENTRY ohmd_device_geti(ohmd_device *device, ohmd_int_value type, int *out)
 {
-	switch(type){
-		case OHMD_SCREEN_HORIZONTAL_RESOLUTION:
-			*out = device->properties.hres;
-			return OHMD_S_OK;
+	switch (type)
+	{
+	case OHMD_SCREEN_HORIZONTAL_RESOLUTION:
+		*out = device->properties.hres;
+		return OHMD_S_OK;
 
-		case OHMD_SCREEN_VERTICAL_RESOLUTION:
-			*out = device->properties.vres;
-			return OHMD_S_OK;
-		
-		case OHMD_CONTROL_COUNT:
-			*out = device->properties.control_count;
-			return OHMD_S_OK;
+	case OHMD_SCREEN_VERTICAL_RESOLUTION:
+		*out = device->properties.vres;
+		return OHMD_S_OK;
 
-		case OHMD_CONTROLS_TYPES:
-			memcpy(out, device->properties.controls_types, device->properties.control_count * sizeof(int));
-			return OHMD_S_OK;
-		
-		case OHMD_CONTROLS_HINTS:
-			memcpy(out, device->properties.controls_hints, device->properties.control_count * sizeof(int));
-			return OHMD_S_OK;
+	case OHMD_CONTROL_COUNT:
+		*out = device->properties.control_count;
+		return OHMD_S_OK;
 
-		default:
-				return OHMD_S_INVALID_PARAMETER;
-	}
-}
+	case OHMD_CONTROLS_TYPES:
+		memcpy(out, device->properties.controls_types, device->properties.control_count * sizeof(int));
+		return OHMD_S_OK;
 
-int OHMD_APIENTRY ohmd_device_seti(ohmd_device* device, ohmd_int_value type, const int* in)
-{
-	switch(type){
+	case OHMD_CONTROLS_HINTS:
+		memcpy(out, device->properties.controls_hints, device->properties.control_count * sizeof(int));
+		return OHMD_S_OK;
+
 	default:
 		return OHMD_S_INVALID_PARAMETER;
 	}
 }
 
-
-int ohmd_device_set_data_unp(ohmd_device* device, ohmd_data_value type, const void* in)
+int OHMD_APIENTRY ohmd_device_seti(ohmd_device *device, ohmd_int_value type, const int *in)
 {
-    switch(type){
-    case OHMD_DRIVER_DATA:
-			device->set_data(device, OHMD_DRIVER_DATA, in);
-			return OHMD_S_OK;
-
-    case OHMD_DRIVER_PROPERTIES:
-			device->set_data(device, OHMD_DRIVER_PROPERTIES, in);
-			return OHMD_S_OK;
-
-    default:
-      return OHMD_S_INVALID_PARAMETER;
-    }
+	switch (type)
+	{
+	default:
+		return OHMD_S_INVALID_PARAMETER;
+	}
 }
 
-int OHMD_APIENTRY ohmd_device_set_data(ohmd_device* device, ohmd_data_value type, const void* in)
+int ohmd_device_set_data_unp(ohmd_device *device, ohmd_data_value type, const void *in)
+{
+	switch (type)
+	{
+	case OHMD_DRIVER_DATA:
+		device->set_data(device, OHMD_DRIVER_DATA, in);
+		return OHMD_S_OK;
+
+	case OHMD_DRIVER_PROPERTIES:
+		device->set_data(device, OHMD_DRIVER_PROPERTIES, in);
+		return OHMD_S_OK;
+
+	default:
+		return OHMD_S_INVALID_PARAMETER;
+	}
+}
+
+int OHMD_APIENTRY ohmd_device_set_data(ohmd_device *device, ohmd_data_value type, const void *in)
 {
 	ohmd_lock_mutex(device->ctx->update_mutex);
 	int ret = ohmd_device_set_data_unp(device, type, in);
@@ -511,9 +540,10 @@ int OHMD_APIENTRY ohmd_device_set_data(ohmd_device* device, ohmd_data_value type
 	return ret;
 }
 
-ohmd_status OHMD_APIENTRY ohmd_device_settings_seti(ohmd_device_settings* settings, ohmd_int_settings key, const int* val)
+ohmd_status OHMD_APIENTRY ohmd_device_settings_seti(ohmd_device_settings *settings, ohmd_int_settings key, const int *val)
 {
-	switch(key){
+	switch (key)
+	{
 	case OHMD_IDS_AUTOMATIC_UPDATE:
 		settings->automatic_update = val[0] == 0 ? false : true;
 		return OHMD_S_OK;
@@ -523,25 +553,25 @@ ohmd_status OHMD_APIENTRY ohmd_device_settings_seti(ohmd_device_settings* settin
 	}
 }
 
-ohmd_device_settings* OHMD_APIENTRY ohmd_device_settings_create(ohmd_context* ctx)
+ohmd_device_settings *OHMD_APIENTRY ohmd_device_settings_create(ohmd_context *ctx)
 {
 	return ohmd_alloc(ctx, sizeof(ohmd_device_settings));
 }
 
-void OHMD_APIENTRY ohmd_device_settings_destroy(ohmd_device_settings* settings)
+void OHMD_APIENTRY ohmd_device_settings_destroy(ohmd_device_settings *settings)
 {
 	free(settings);
 }
 
-void* ohmd_allocfn(ohmd_context* ctx, const char* e_msg, size_t size)
+void *ohmd_allocfn(ohmd_context *ctx, const char *e_msg, size_t size)
 {
-	void* ret = calloc(1, size);
-	if(!ret)
+	void *ret = calloc(1, size);
+	if (!ret)
 		ohmd_set_error(ctx, "%s", e_msg);
 	return ret;
 }
 
-void ohmd_set_default_device_properties(ohmd_device_properties* props)
+void ohmd_set_default_device_properties(ohmd_device_properties *props)
 {
 	props->ipd = 0.061f;
 	props->znear = 0.1f;
@@ -550,7 +580,7 @@ void ohmd_set_default_device_properties(ohmd_device_properties* props)
 	ohmd_set_universal_aberration_k(props, 1.0, 1.0, 1.0);
 }
 
-void ohmd_calc_default_proj_matrices(ohmd_device_properties* props)
+void ohmd_calc_default_proj_matrices(ohmd_device_properties *props)
 {
 	mat4x4f proj_base; // base projection matrix
 
@@ -579,7 +609,7 @@ void ohmd_calc_default_proj_matrices(ohmd_device_properties* props)
 	omat4x4f_mult(&translate, &proj_base, &props->proj_right);
 }
 
-void ohmd_set_universal_distortion_k(ohmd_device_properties* props, float a, float b, float c, float d)
+void ohmd_set_universal_distortion_k(ohmd_device_properties *props, float a, float b, float c, float d)
 {
 	props->universal_distortion_k[0] = a;
 	props->universal_distortion_k[1] = b;
@@ -587,14 +617,14 @@ void ohmd_set_universal_distortion_k(ohmd_device_properties* props, float a, flo
 	props->universal_distortion_k[3] = d;
 }
 
-void ohmd_set_universal_aberration_k(ohmd_device_properties* props, float r, float g, float b)
+void ohmd_set_universal_aberration_k(ohmd_device_properties *props, float r, float g, float b)
 {
 	props->universal_aberration_k[0] = r;
 	props->universal_aberration_k[1] = g;
 	props->universal_aberration_k[2] = b;
 }
 
-uint64_t ohmd_monotonic_per_sec(ohmd_context* ctx)
+uint64_t ohmd_monotonic_per_sec(ohmd_context *ctx)
 {
 	return ctx->monotonic_ticks_per_sec;
 }
@@ -610,10 +640,10 @@ uint64_t ohmd_monotonic_conv(uint64_t ticks, uint64_t srcTicksPerSecond, uint64_
 	// to deal with much larger values before running into problems with
 	// integer overflow.
 	return ticks / srcTicksPerSecond * dstTicksPerSecond +
-		ticks % srcTicksPerSecond * dstTicksPerSecond / srcTicksPerSecond;
+		   ticks % srcTicksPerSecond * dstTicksPerSecond / srcTicksPerSecond;
 }
 
-void ohmd_get_version(int* out_major, int* out_minor, int* out_patch)
+void ohmd_get_version(int *out_major, int *out_minor, int *out_patch)
 {
 	*out_major = OHMD_VERSION_MAJOR;
 	*out_minor = OHMD_VERSION_MINOR;
@@ -625,19 +655,22 @@ ohmd_status ohmd_require_version(int major, int minor, int patch)
 	int curr_major, curr_minor, curr_patch;
 	ohmd_get_version(&curr_major, &curr_minor, &curr_patch);
 
-	if(curr_major != major){
+	if (curr_major != major)
+	{
 		// require same major version
 		return OHMD_S_UNSUPPORTED;
 	}
 
-	if(curr_minor == minor){
+	if (curr_minor == minor)
+	{
 		// check patch version if the required minor version matches current
-		if(curr_patch < patch){
+		if (curr_patch < patch)
+		{
 			// fail is patch is too low
 			return OHMD_S_UNSUPPORTED;
 		}
 	}
-	else if(curr_minor < minor)
+	else if (curr_minor < minor)
 	{
 		// fail if minor is too low
 		return OHMD_S_UNSUPPORTED;

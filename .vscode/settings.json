@@ -7,6 +7,9 @@
         "otus.h": "c",
         "stdint.h": "c",
         "stdlib.h": "c",
-        "wmr.h": "c"
+        "wmr.h": "c",
+        "EXTERNAL.C": "cpp",
+        "openhmdi.h": "c",
+        "platform.h": "c"
     }
 }

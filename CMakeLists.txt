@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.1)
 
 project(openhmd C)
 
+set(CMAKE_BUILD_TYPE Debug)
+
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
