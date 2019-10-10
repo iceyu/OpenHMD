@@ -12,11 +12,6 @@
 
 #define TICK_LEN (1.0f / 1000000.0f) // 1 MHz ticks
 
-#define PNP_ID_VENDOR_ID_SOURCE 0x02
-#define PNP_ID_VENDOR_ID 0x1915
-#define PNP_ID_PRODUCT_ID 0xEEEE
-#define PNP_ID_PRODUCT_VERSION 0x0001
-
 #include <string.h>
 #include <wchar.h>
 #include <hidapi.h>
@@ -40,18 +35,18 @@ typedef struct
 
 } wick_priv;
 
-void accel_from_psvr_vec(const int16_t *smp, vec3f *out_vec)
+void accel_from_wick_vec(const int16_t *smp, vec3f *out_vec)
 {
-  // out_vec->x = (float)smp[1] * (9.81 / 16384);
-  // out_vec->y = (float)smp[0] * (9.81 / 16384);
-  // out_vec->z = (float)smp[2] * -(9.81 / 16384);
+  out_vec->x = (float)smp[1] * (9.81 / 16384);
+  out_vec->y = (float)smp[0] * (9.81 / 16384);
+  out_vec->z = (float)smp[2] * -(9.81 / 16384);
 }
 
-void gyro_from_psvr_vec(const int16_t *smp, vec3f *out_vec)
+void gyro_from_wick_vec(const int16_t *smp, vec3f *out_vec)
 {
-  // out_vec->x = (float)smp[1] * 0.00105f;
-  // out_vec->y = (float)smp[0] * 0.00105f;
-  // out_vec->z = (float)smp[2] * 0.00105f * -1.0f;
+  out_vec->x = (float)smp[1] * 0.00105f;
+  out_vec->y = (float)smp[0] * 0.00105f;
+  out_vec->z = (float)smp[2] * 0.00105f * -1.0f;
 }
 
 static void handle_tracker_sensor_msg(wick_priv *priv, unsigned char *buffer,
@@ -68,13 +63,13 @@ static void handle_tracker_sensor_msg(wick_priv *priv, unsigned char *buffer,
   {
     for (int j = 0; j < 3; j++)
     {
-      accel_from_psvr_vec(s->accel[i][j], &priv->raw_accel[i][j]);
-      gyro_from_psvr_vec(s->gyro[i][j], &priv->raw_gyro[i][j]);
+      //accel_from_wick_vec(s->accel[i][j], &priv->raw_accel[i][j]);
+      //gyro_from_wick_vec(s->gyro[i][j], &priv->raw_gyro[i][j]);
     }
   }
 }
 
-static void update_device(ohmd_device *device)
+void update_device(ohmd_device *device)
 {
   wick_priv *priv = (wick_priv *)device;
 

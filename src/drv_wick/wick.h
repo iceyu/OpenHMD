@@ -6,6 +6,11 @@
 
 #include "../openhmdi.h"
 
+#define PNP_ID_VENDOR_ID_SOURCE 0x02
+#define PNP_ID_VENDOR_ID 0x1915
+#define PNP_ID_PRODUCT_ID 0xEEEE
+#define PNP_ID_PRODUCT_VERSION 0x0001
+
 typedef struct
 {
     uint8_t report_id;
@@ -25,6 +30,14 @@ typedef struct
 
 } wick_sensors_packet;
 
+typedef void (*frameId_detection_callback)();
+typedef void (*timestamp_detection_callback)();
+
+void register_frameId_detection(frameId_detection_callback cb);
+void register_timestamp_detection(timestamp_detection_callback cb);
+
 bool wick_sensors_decode_packet(wick_sensors_packet *pkt, const unsigned char *buffer, int size);
+
+void update_device(ohmd_device *device);
 
 #endif

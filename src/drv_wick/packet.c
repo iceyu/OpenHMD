@@ -4,6 +4,9 @@
 #define inline __inline
 #endif
 
+frameId_detection_callback frameId_callback = NULL;
+timestamp_detection_callback timestamp_callback = NULL;
+
 inline static uint8_t read8(const unsigned char **buffer)
 {
     uint8_t ret = **buffer;
@@ -53,8 +56,18 @@ inline static uint64_t read64(const unsigned char **buffer)
     return ret;
 }
 
+void register_frameId_detection(frameId_detection_callback cb)
+{
+    frameId_callback = cb;
+}
+void register_timestamp_detection(timestamp_detection_callback cb)
+{
+    timestamp_callback = cb;
+}
+
 bool wick_sensors_decode_packet(wick_sensors_packet *pkt, const unsigned char *buffer, int size)
 {
+    static int last_frame_id = 0;
     if (size != 82)
     {
         LOGE("invalid wick sensor packet size (expected 82 but got %d)", size);
@@ -72,6 +85,19 @@ bool wick_sensors_decode_packet(wick_sensors_packet *pkt, const unsigned char *b
     pkt->frame_id = read8(&buffer);
     pkt->timestamp = read_i32(&buffer);
     pkt->temperature = read16(&buffer);
+    if ((pkt->frame_id - last_frame_id == -255) || (pkt->frame_id - last_frame_id == 1))
+    {
+        LOGI("frame id = %d\n", pkt->frame_id);
+    }
+    else
+    {
+        LOGE("Frame drop... ");
+        if (frameId_callback != NULL)
+        {
+            frameId_callback();
+        }
+    }
+    last_frame_id = pkt->frame_id;
     for (int i = 0; i < 5; i++)
     {
         for (int j = 0; j < 3; j++)
