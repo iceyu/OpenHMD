@@ -89,7 +89,7 @@ void test_wick()
 		LOGI("%d Vendor = %s Product = %s\n", i, desc.vendor, desc.product);
 		if (strcmp(desc.product, "NRF52840-DK") == 0)
 		{
-			if (index == 1)
+			if (index == 0)
 			{
 				printf("Found Wick Game Controller\n");
 

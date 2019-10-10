@@ -164,9 +164,14 @@ static hid_device *open_device_idx(int manufacturer, int product)
     if (cur_dev->vendor_id == manufacturer && cur_dev->product_id == product)
     {
       ret = hid_open_path(cur_dev->path);
-      LOGI("opening %d\n");
-      if(NULL == ret){
+      LOGI("opening\n");
+      if (NULL == ret)
+      {
         LOGE("Open failed, try open with 'sudo'");
+      }
+      else
+      {
+        LOGI("Open %s successfully\n", cur_dev->path);
       }
     }
 
