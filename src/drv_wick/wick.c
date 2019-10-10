@@ -164,7 +164,10 @@ static hid_device *open_device_idx(int manufacturer, int product)
     if (cur_dev->vendor_id == manufacturer && cur_dev->product_id == product)
     {
       ret = hid_open_path(cur_dev->path);
-      LOGI("opening\n");
+      LOGI("opening %d\n");
+      if(NULL == ret){
+        LOGE("Open failed, try open with 'sudo'");
+      }
     }
 
     cur_dev = cur_dev->next;
@@ -203,7 +206,7 @@ cleanup:
   if (priv)
     free(priv);
 
-  return NULL;
+  return (ohmd_device *)priv;
 }
 
 static void get_device_list(ohmd_driver *driver, ohmd_device_list *list)
@@ -214,22 +217,30 @@ static void get_device_list(ohmd_driver *driver, ohmd_device_list *list)
   int idx = 0;
   while (cur_dev)
   {
-    char *path = cur_dev->path == NULL ? "Empty" : cur_dev->path;
-    printf("Device Found\n type : %04hx %04hx\n path : %s\n ", cur_dev->vendor_id, cur_dev->product_id, path);
-    // ohmd_device_desc *desc = &list->devices[list->num_devices++];
 
-    // strcpy(desc->driver, "OpenHMD Windows Mixed Reality Driver");
-    // strcpy(desc->vendor, "Microsoft");
-    // strcpy(desc->product, "HoloLens Sensors");
+    printf("Device Found\n  type: %04hx %04hx\n  path: %s\n  serial_number: %ls", cur_dev->vendor_id, cur_dev->product_id, cur_dev->path, cur_dev->serial_number);
+    printf("\n");
+    printf("  Manufacturer: %ls\n", cur_dev->manufacturer_string);
+    printf("  Product:      %ls\n", cur_dev->product_string);
+    printf("  Release:      %hx\n", cur_dev->release_number);
+    printf("  Interface:    %d\n", cur_dev->interface_number);
+    printf("\n");
 
-    // desc->revision = 0;
+    ohmd_device_desc *desc = &list->devices[list->num_devices++];
 
-    // snprintf(desc->path, OHMD_STR_SIZE, "%d", idx);
+    strcpy(desc->driver, "OpenHMD Wick Driver");
+    strcpy(desc->vendor, "Segger");
+    strcpy(desc->product, "NRF52840-DK");
 
-    // desc->driver_ptr = driver;
+    desc->revision = 0;
 
-    // desc->device_class = OHMD_DEVICE_CLASS_HMD;
-    // desc->device_flags = OHMD_DEVICE_FLAGS_ROTATIONAL_TRACKING;
+    snprintf(desc->path, OHMD_STR_SIZE, "%d", idx);
+
+    desc->driver_ptr = driver;
+
+    //TODO : device_class ? device_flags ?
+    desc->device_class = OHMD_DEVICE_CLASS_HMD;
+    desc->device_flags = OHMD_DEVICE_FLAGS_ROTATIONAL_TRACKING;
 
     cur_dev = cur_dev->next;
     idx++;

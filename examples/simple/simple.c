@@ -10,31 +10,70 @@
 #include <openhmd.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <hidapi.h>
 #include "wick.h"
 
-void ohmd_sleep(double);
-
-// gets float values from the device and prints them
-void print_infof(ohmd_device *hmd, const char *name, int len, ohmd_float_value val)
+typedef struct
 {
-	float *f = (float *)malloc(len * sizeof(float));
-	ohmd_device_getf(hmd, val, f);
-	printf("%-25s", name);
-	for (int i = 0; i < len; i++)
-		printf("%f ", f[i]);
-	printf("\n");
+	ohmd_device base;
+
+	hid_device *hmd_handle;
+	hid_device *hmd_control;
+
+	vec3f raw_accel[5][3];
+	vec3f raw_gyro[5][3];
+	wick_sensors_packet sensor;
+
+} wick_priv;
+
+#define FEATURE_BUFFER_SIZE 256
+
+static void handle_tracker_sensor_msg(wick_priv *priv, unsigned char *buffer,
+									  int size)
+{
+	if (!wick_sensors_decode_packet(&priv->sensor, buffer, size))
+	{
+		LOGE("couldn't decode tracker sensor message");
+	}
+
+	wick_sensors_packet *s = &priv->sensor;
+
+	for (int i = 0; i < 5; i++)
+	{
+		for (int j = 0; j < 3; j++)
+		{
+			//accel_from_psvr_vec(s->accel[i][j], &priv->raw_accel[i][j]);
+			//gyro_from_psvr_vec(s->gyro[i][j], &priv->raw_gyro[i][j]);
+		}
+	}
 }
 
-// gets int values from the device and prints them
-void print_infoi(ohmd_device *hmd, const char *name, int len, ohmd_int_value val)
+static void update_device(ohmd_device *device)
 {
-	int *iv = (int *)malloc(len * sizeof(int));
-	ohmd_device_geti(hmd, val, iv);
-	printf("%-25s", name);
-	for (int i = 0; i < len; i++)
-		printf("%d ", iv[i]);
-	printf("\n");
+	wick_priv *priv = (wick_priv *)device;
+	int size = 0;
+	unsigned char buffer[FEATURE_BUFFER_SIZE];
+
+	while (true)
+	{
+		int size = hid_read(priv->hmd_handle, buffer, FEATURE_BUFFER_SIZE);
+
+		if (size < 0)
+		{
+			LOGE("error reading from device");
+			return;
+		}
+		else if (size == 0)
+		{
+			return; // No more messages, return.
+		}
+		handle_tracker_sensor_msg(priv, buffer, size);
+	}
+
+	if (size < 0)
+	{
+		LOGE("error reading from device");
+	}
 }
 
 void test_wick()
@@ -43,24 +82,29 @@ void test_wick()
 	ohmd_driver *driver = ohmd_create_wick_drv(ctx);
 	int num_devices = ohmd_ctx_probe(ctx);
 	driver->get_device_list(driver, &ctx->list);
-	// printf("Device Num = %d\n", ctx->list.num_devices);
-	// for (int i = 0; i < ctx->list.num_devices; i++)
-	// {
-	// 	ohmd_device_desc desc = ctx->list.devices[i];
-	// 	printf("%d Vendor = %s Product = %s\n", i, desc.vendor, desc.product);
-	// 	if (strcmp(desc.product, "Motion controller - Left") == 0)
-	// 	{
-	// 		printf("Found Motion Controller\n");
-	// 		//ohmd_device *device = open_motion_controller_device(driver, &desc);
+	int index = 0;
+	for (int i = 0; i < ctx->list.num_devices; i++)
+	{
+		ohmd_device_desc desc = ctx->list.devices[i];
+		LOGI("%d Vendor = %s Product = %s\n", i, desc.vendor, desc.product);
+		if (strcmp(desc.product, "NRF52840-DK") == 0)
+		{
+			if (index == 1)
+			{
+				printf("Found Wick Game Controller\n");
 
-	// 		while (1)
-	// 		{
-	// 			//update_device(device);
-	// 		}
-	// 	}
-	// }
+				ohmd_device *device = driver->open_device(driver, &desc);
 
-	// driver->destroy(ctx);
+				while (true)
+				{
+					update_device(device);
+				}
+			}
+			index++;
+		}
+	}
+
+	driver->destroy(ctx);
 }
 
 int main(int argc, char **argv)
