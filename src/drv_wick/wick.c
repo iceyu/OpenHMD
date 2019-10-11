@@ -76,6 +76,18 @@ void update_device(ohmd_device *device)
   int size = 0;
   unsigned char buffer[FEATURE_BUFFER_SIZE];
 
+  // test cmd
+  // set up the command buffer
+  // unsigned char cmdBuf[64];
+  // memset(cmdBuf, 0, sizeof(cmdBuf));
+  // buffer[0] = 0x01;
+  // buffer[1] = 0x81;
+
+  // int res = hid_write(priv->hmd_handle, cmdBuf, 1 + 64);
+  // res = hid_read(priv->hmd_handle, cmdBuf, 1 + 64);
+
+  // printf("Recv id : %d\n", cmdBuf[0]);
+
   while (true)
   {
     int size = hid_read(priv->hmd_handle, buffer, FEATURE_BUFFER_SIZE);

@@ -96,7 +96,7 @@ bool wick_sensors_decode_packet(wick_sensors_packet *pkt, const unsigned char *b
     // detecte whether frame is lost
     if ((pkt->frame_id - last_frame_id == -255) || (pkt->frame_id - last_frame_id == 1))
     {
-        //LOGI("frame id = %d\n", pkt->frame_id);
+        LOGI("frame id = %d\n", pkt->frame_id);
     }
     else
     {
