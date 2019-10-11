@@ -4,6 +4,8 @@
 #define inline __inline
 #endif
 
+#include <limits.h>
+
 frameId_detection_callback frameId_callback = NULL;
 timestamp_detection_callback timestamp_callback = NULL;
 
@@ -68,6 +70,10 @@ void register_timestamp_detection(timestamp_detection_callback cb)
 bool wick_sensors_decode_packet(wick_sensors_packet *pkt, const unsigned char *buffer, int size)
 {
     static int last_frame_id = 0;
+    static int last_timestamp = 0;
+
+    static float time_interval = 0; //ms
+
     if (size != 82)
     {
         LOGE("invalid wick sensor packet size (expected 82 but got %d)", size);
@@ -83,21 +89,45 @@ bool wick_sensors_decode_packet(wick_sensors_packet *pkt, const unsigned char *b
     pkt->trigger = read16(&buffer);
     pkt->grip = read16(&buffer);
     pkt->frame_id = read8(&buffer);
+    //pkt->timestamp = read_i32(&buffer) + 4200000000; //for test
     pkt->timestamp = read_i32(&buffer);
     pkt->temperature = read16(&buffer);
+
+    // detecte whether frame is lost
     if ((pkt->frame_id - last_frame_id == -255) || (pkt->frame_id - last_frame_id == 1))
     {
-        LOGI("frame id = %d\n", pkt->frame_id);
+        //LOGI("frame id = %d\n", pkt->frame_id);
     }
     else
     {
-        LOGE("Frame drop... ");
+        LOGE("Frame drop... current frame id = %d   last_frame id = %d\n", pkt->frame_id, last_frame_id);
         if (frameId_callback != NULL)
         {
             frameId_callback();
         }
     }
     last_frame_id = pkt->frame_id;
+
+    //detect whether time interval is stabile (around 10ms)
+    if (last_timestamp != 0)
+    {
+        // 下一时刻时间戳比上一时刻时间戳小，则说明时间戳溢出，重新从起点算起
+        if (pkt->timestamp < last_timestamp)
+        {
+            time_interval = (pkt->timestamp + ULONG_MAX - last_timestamp) / 1000.0f;
+        }
+        else
+        {
+            time_interval = (pkt->timestamp - last_timestamp) / 1000.0f;
+        }
+        //LOGI("Time Interval : %.3f ms %ld %ld", time_interval, pkt->timestamp, last_timestamp);
+        if (abs(time_interval - 10) > 0.05 && timestamp_callback != NULL)
+        {
+            timestamp_callback();
+        }
+    }
+    last_timestamp = pkt->timestamp;
+
     for (int i = 0; i < 5; i++)
     {
         for (int j = 0; j < 3; j++)

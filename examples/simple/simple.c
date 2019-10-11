@@ -15,12 +15,18 @@
 
 void detecte_frameId()
 {
-	LOGE("ERROR ..............\n");
+	LOGE("Lost frame\n");
+}
+
+void detecte_timestamp()
+{
+	LOGE("Time interval is not stabile\n");
 }
 
 void test_wick()
 {
 	register_frameId_detection(detecte_frameId);
+	register_timestamp_detection(detecte_timestamp);
 
 	ohmd_context *ctx = ohmd_ctx_create();
 	ohmd_driver *driver = ohmd_create_wick_drv(ctx);
